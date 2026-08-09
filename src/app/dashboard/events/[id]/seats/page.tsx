@@ -91,8 +91,9 @@ export default function SeatAllocationPage() {
   const totalPrice = basePrice + platformFee;
 
   const handleSelectZone = useCallback((zone: Zone) => {
-    if (zone.capacity - zone.bookedCount <= 0) return;
-    setSelectedZone(zone); setQuantity(1); setSelectedSeats([]); setStep('zone');
+    const available = zone.capacity - zone.bookedCount;
+    if (available <= 0) return;
+    setSelectedZone(zone); setQuantity(prev => Math.min(prev, available)); setSelectedSeats([]); setStep('zone');
   }, []);
 
   const handleSeatClick = (seatId: string, isSold: boolean) => {

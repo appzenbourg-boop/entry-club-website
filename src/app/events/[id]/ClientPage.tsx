@@ -88,6 +88,8 @@ export default function EventDetailsPage() {
   const [quantity, setQuantity] = useState(1);
   const [step, setStep] = useState<'zone' | 'seats'>('zone');
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+  const [hostImageError, setHostImageError] = useState(false);
 
   const zones = React.useMemo(() => {
     if (!fetchedEvent) return [];
@@ -105,6 +107,11 @@ export default function EventDetailsPage() {
       perks: z.perks || [],
     }));
   }, [fetchedEvent]);
+
+  const isCompletelySoldOut = React.useMemo(() => {
+    if (zones.length === 0) return false;
+    return zones.every((z: any) => (z.capacity - z.bookedCount) <= 0);
+  }, [zones]);
 
   const seatsArray = React.useMemo(() => {
     if (!selectedZone) return [];
@@ -148,9 +155,14 @@ export default function EventDetailsPage() {
   });
 
   const handleSelectZone = React.useCallback((zone: any) => {
-    if (zone.capacity - zone.bookedCount <= 0) return;
-    setSelectedZone(zone); setQuantity(1); setSelectedSeats([]); setStep('zone');
+    const available = zone.capacity - zone.bookedCount;
+    if (available <= 0) return;
+    setSelectedZone(zone); 
+    setSelectedSeats([]); 
+    setQuantity(prev => Math.min(prev, available));
+    setStep('zone');
   }, []);
+
 
   if (isLoading) {
     return <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-white">
@@ -280,8 +292,14 @@ export default function EventDetailsPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-bold text-white">Hosted By</h2>
             <div className="flex items-center space-x-4 bg-[#111111] border border-white/10 rounded-2xl p-5 shadow-xl">
-              <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-blue-500/30 shrink-0">
-                <Image src={event.hostImage} alt={event.hostName} fill className="object-cover" />
+              <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-blue-500/30 shrink-0 bg-white/5 flex items-center justify-center">
+                <Image 
+                  src={hostImageError ? 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000&auto=format&fit=crop' : event.hostImage} 
+                  alt={event.hostName} 
+                  fill 
+                  className="object-cover" 
+                  onError={() => setHostImageError(true)}
+                />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-white">{event.hostName}</h3>
@@ -298,9 +316,16 @@ export default function EventDetailsPage() {
             <h2 className="text-2xl font-bold text-white">About</h2>
             <div className="text-white/60 leading-relaxed font-light">
               <p className="mb-4 text-white/80 font-medium">Join us for {event.title}</p>
-              <p>{event.about}</p>
+              <p className={isAboutExpanded ? "whitespace-pre-wrap" : "line-clamp-3"}>{event.about}</p>
             </div>
-            <button className="text-blue-400 font-bold text-sm hover:underline mt-2">Read more</button>
+            {event.about?.length > 150 && (
+              <button 
+                onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+                className="text-blue-400 font-bold text-sm hover:underline mt-2"
+              >
+                {isAboutExpanded ? "Show less" : "Read more"}
+              </button>
+            )}
           </section>
 
           {/* Event Info Grid (Real Data) */}
@@ -341,15 +366,31 @@ export default function EventDetailsPage() {
               </div>
 
               <div className="bg-[#111111] border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col justify-center">
-                <div className="flex items-center space-x-2 text-white/40 mb-2 text-[10px] tracking-widest font-bold uppercase">
-                  <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center">
-                    <Ticket className="w-3 h-3 text-emerald-500" />
-                  </div>
-                  <span>Tickets Live Since</span>
-                </div>
-                <div className="text-white font-bold text-sm md:text-base">
-                  {event.ticketsLive}
-                </div>
+                {isCompletelySoldOut ? (
+                  <>
+                    <div className="flex items-center space-x-2 text-red-400 mb-2 text-[10px] tracking-widest font-bold uppercase">
+                      <div className="w-5 h-5 rounded-md bg-red-500/20 flex items-center justify-center">
+                        <Ticket className="w-3 h-3 text-red-500" />
+                      </div>
+                      <span>Status</span>
+                    </div>
+                    <div className="text-red-500 font-black text-lg">
+                      SOLD OUT
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-2 text-white/40 mb-2 text-[10px] tracking-widest font-bold uppercase">
+                      <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                        <Ticket className="w-3 h-3 text-emerald-500" />
+                      </div>
+                      <span>Tickets Live Since</span>
+                    </div>
+                    <div className="text-white font-bold text-sm md:text-base">
+                      {event.ticketsLive}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </section>
@@ -410,9 +451,15 @@ export default function EventDetailsPage() {
                 {event.price} <span className="text-sm font-medium text-white/40 line-through tracking-normal ml-1"></span>
                 <span className="text-sm font-medium text-white/40 block -mt-1">{event.price !== 'Free' ? 'onwards' : ''}</span>
               </div>
-              <Button onClick={scrollToTickets} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg">
-                Book Tickets
-              </Button>
+              {isCompletelySoldOut ? (
+                <Button disabled className="h-12 px-8 bg-white/10 text-white/40 font-bold rounded-xl cursor-not-allowed border border-white/5">
+                  Sold Out
+                </Button>
+              ) : (
+                <Button onClick={scrollToTickets} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg">
+                  Book Tickets
+                </Button>
+              )}
             </div>
 
           </div>
@@ -423,7 +470,15 @@ export default function EventDetailsPage() {
       <div ref={ticketsRef} className="w-full bg-[#0A0A0A] border-t border-white/10 pt-16 pb-32 mt-10">
         <div className="max-w-6xl mx-auto px-4 md:px-8">
           
-          {step === 'zone' ? (
+          {isCompletelySoldOut ? (
+            <div className="w-full flex flex-col items-center justify-center py-24 bg-[#111111] border border-white/10 rounded-3xl shadow-2xl">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                <Ticket className="w-10 h-10 text-red-500" />
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-3">SOLD OUT</h2>
+              <p className="text-white/50 text-lg">No more tickets or tables are available for this event.</p>
+            </div>
+          ) : step === 'zone' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* LEFT COLUMN: Main Selections */}
               <div className="lg:col-span-2 space-y-10">
@@ -494,6 +549,11 @@ export default function EventDetailsPage() {
                             const isFull = available <= 0;
                             const isSel = selectedZone?._id === zone._id || selectedZone?.name === zone.name;
                             
+                            let hash = 0;
+                            const idStr = String(zone._id || zone.name);
+                            for (let i = 0; i < idStr.length; i++) hash = ((hash << 5) - hash) + idStr.charCodeAt(i);
+                            const fastFillingPercent = 20 + (Math.abs(hash * 31 + idx) % 26);
+                            
                             return (
                               <motion.div 
                                 key={zone._id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
@@ -517,9 +577,14 @@ export default function EventDetailsPage() {
                                   </div>
                                   {isSel ? (
                                     <CheckCircle2 className="w-5 h-5 text-blue-400" />
-                                  ) : !isFull && (
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                  )}
+                                  ) : !isFull ? (
+                                    <div className="flex items-center gap-1.5 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
+                                      <span className="text-[9px] font-bold tracking-wider text-rose-400 uppercase">
+                                        Fast Filling {fastFillingPercent}%
+                                      </span>
+                                    </div>
+                                  ) : null}
                                 </div>
                                 
                                 <h3 className="text-xl font-bold text-white mb-1.5">{zone.name}</h3>
@@ -556,8 +621,34 @@ export default function EventDetailsPage() {
                   <div className="px-6 py-6 space-y-6">
                     {selectedZone ? (
                       <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
-                        <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">Selected Zone</p>
-                        <p className="font-bold text-lg text-white">{selectedZone.name}</p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Selected Zone</p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { setQuantity(q => Math.max(1, q - 1)); setSelectedSeats([]); }}
+                              disabled={quantity <= 1}
+                              className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center transition-colors"
+                            >
+                              <Minus className="w-3 h-3 text-white" />
+                            </button>
+                            <span className="text-xs font-bold text-white w-4 text-center">{quantity}</span>
+                            <button
+                              onClick={() => {
+                                const available = selectedZone.capacity - selectedZone.bookedCount;
+                                if (quantity >= available) {
+                                  toast.warning("Only " + available + " spots available in selected zone.");
+                                  return;
+                                }
+                                setQuantity(q => Math.min(20, q + 1));
+                                setSelectedSeats([]);
+                              }}
+                              className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center transition-colors shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                            >
+                              <Plus className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="font-bold text-lg text-white leading-tight">{selectedZone.name}</p>
                         <p className="text-sm text-white/60 mt-1">{selectedZone.price > 0 ? ("Rs " + selectedZone.price.toLocaleString("en-IN") + " x " + quantity) : "Free Entry"}</p>
                       </div>
                     ) : (
@@ -680,14 +771,44 @@ export default function EventDetailsPage() {
                   
                   <div className="px-6 py-6 space-y-6">
                     <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
-                      <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">Selected Zone</p>
-                      <p className="font-bold text-lg text-white">{selectedZone?.name}</p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Selected Zone</p>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => { setQuantity(q => Math.max(1, q - 1)); setSelectedSeats([]); }}
+                            disabled={quantity <= 1}
+                            className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center transition-colors"
+                          >
+                            <Minus className="w-3 h-3 text-white" />
+                          </button>
+                          <span className="text-xs font-bold text-white w-4 text-center">{quantity}</span>
+                          <button
+                            onClick={() => {
+                              if (selectedZone) {
+                                const available = selectedZone.capacity - selectedZone.bookedCount;
+                                if (quantity >= available) {
+                                  toast.warning("Only " + available + " spots available in selected zone.");
+                                  return;
+                                }
+                              }
+                              setQuantity(q => Math.min(20, q + 1));
+                              setSelectedSeats([]);
+                            }}
+                            className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center transition-colors shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                          >
+                            <Plus className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="font-bold text-lg text-white leading-tight">{selectedZone?.name}</p>
                       <p className="text-sm text-white/60 mt-1">{selectedZone?.price > 0 ? ("Rs " + selectedZone?.price.toLocaleString("en-IN") + " x " + quantity) : "Free Entry"}</p>
                     </div>
 
                     {selectedSeats.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest">Selected Tables</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest">Selected Tables</p>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {selectedSeats.map(id => (
                             <span key={id} className="w-8 h-8 rounded bg-white/10 flex items-center justify-center text-sm font-bold">{id}</span>
