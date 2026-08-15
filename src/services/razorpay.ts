@@ -1,5 +1,5 @@
 import axiosInstance from '@/lib/axios';
-
+import { logoBase64 } from '@/lib/logoBase64';
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '';
 
 export interface PaymentOptions {
@@ -78,7 +78,7 @@ export const initiateRazorpayPayment = async (
         currency: 'INR',
         name: 'Entry Club',
         description: paymentOptions.description,
-        image: 'https://i.imgur.com/n5tjHFD.png',
+        image: logoBase64,
         order_id: order.id,
         handler: async function (response: any) {
           try {
