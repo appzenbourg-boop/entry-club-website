@@ -25,17 +25,17 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
-    
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -47,28 +47,28 @@ export default function Navbar() {
   const detectLocation = () => {
     setIsLocating(true);
     if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const { latitude, longitude } = position.coords;
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const data = await res.json();
-                let detectedCity = 'Unknown Location';
-                if (data && data.address) {
-                    detectedCity = data.address.city || data.address.town || data.address.state_district || 'Unknown Location';
-                }
-                setLocation(latitude, longitude, detectedCity);
-            } catch (err) {
-                console.error(err);
-                setLocation(latitude, longitude, 'Location Found');
-            }
-            setIsLocating(false);
-            setIsDropdownOpen(false);
-        }, (error) => {
-            console.error("Error getting location:", error);
-            setIsLocating(false);
-        });
-    } else {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          let detectedCity = 'Unknown Location';
+          if (data && data.address) {
+            detectedCity = data.address.city || data.address.town || data.address.state_district || 'Unknown Location';
+          }
+          setLocation(latitude, longitude, detectedCity);
+        } catch (err) {
+          console.error(err);
+          setLocation(latitude, longitude, 'Location Found');
+        }
         setIsLocating(false);
+        setIsDropdownOpen(false);
+      }, (error) => {
+        console.error("Error getting location:", error);
+        setIsLocating(false);
+      });
+    } else {
+      setIsLocating(false);
     }
   };
 
@@ -77,11 +77,10 @@ export default function Navbar() {
   }
 
   return (
-    <header className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/5 py-0' 
+    <header className={`fixed top-0 z-50 w-full transition-all duration-300 ${isScrolled
+        ? 'bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/5 py-0'
         : 'bg-transparent border-transparent py-2'
-    }`}>
+      }`}>
       <div className="container mx-auto flex h-16 md:h-20 items-center justify-between px-4 md:px-8">
         {/* Left: Logo */}
         <div className="flex items-center md:w-[30%] min-w-0">
@@ -105,9 +104,8 @@ export default function Navbar() {
 
         {/* Center: Links */}
         <div className="hidden md:flex flex-1 justify-center md:w-[40%]">
-          <nav className={`flex items-center p-1 space-x-1 rounded-full transition-all duration-300 ${
-            isScrolled ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-transparent border-transparent'
-          }`}>
+          <nav className={`flex items-center p-1 space-x-1 rounded-full transition-all duration-300 ${isScrolled ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-transparent border-transparent'
+            }`}>
             {[
               { name: 'Home', href: '/' },
               { name: 'Events', href: '/events' },
@@ -118,11 +116,10 @@ export default function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                    isActive
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isActive
                       ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                       : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -130,7 +127,7 @@ export default function Navbar() {
             })}
 
             {/* Explore Dropdown */}
-            <div 
+            <div
               className="relative"
               onMouseEnter={() => setIsDownloadOpen(true)}
               onMouseLeave={() => setIsDownloadOpen(false)}
@@ -152,7 +149,7 @@ export default function Navbar() {
                       {label}
                       <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isDownloadOpen ? 'rotate-180' : 'opacity-70'}`} />
                     </button>
-                    
+
                     {isDownloadOpen && (
                       <div className="absolute top-full left-0 pt-2 w-52 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="bg-[#0A0A0A]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.7)] p-2">
@@ -178,14 +175,14 @@ export default function Navbar() {
             </div>
           </nav>
         </div>
-        
+
         {/* Right: Actions */}
         <div className="flex items-center justify-end md:w-[30%] shrink-0 gap-2 md:gap-4">
           {/* Location Selector */}
           {mounted && (
             <div className="relative hidden md:block" ref={dropdownRef}>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="text-white hover:bg-white/10 flex items-center gap-2 rounded-full px-3 md:px-4 h-8 md:h-10 text-xs md:text-sm"
               >
@@ -197,7 +194,7 @@ export default function Navbar() {
               {/* Location Dropdown */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <button 
+                  <button
                     onClick={detectLocation}
                     disabled={isLocating}
                     className="w-full flex items-center px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
@@ -206,7 +203,7 @@ export default function Navbar() {
                     {isLocating ? 'Locating...' : 'Detect my location'}
                   </button>
                   <div className="h-px bg-white/10 my-1 mx-2" />
-                  <button 
+                  <button
                     onClick={() => { setCity('All Cities'); setIsDropdownOpen(false); }}
                     className="w-full flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-white/5 transition-colors"
                   >
@@ -214,7 +211,7 @@ export default function Navbar() {
                     {city === 'All Cities' && <Check className="w-4 h-4 text-blue-500" />}
                   </button>
                   {CITIES.map(c => (
-                    <button 
+                    <button
                       key={c}
                       onClick={() => { setCity(c); setIsDropdownOpen(false); }}
                       className="w-full flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-white/5 transition-colors"
@@ -234,9 +231,9 @@ export default function Navbar() {
                 <Link href="/dashboard">
                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white rounded-full w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-white/10 overflow-hidden p-0 relative">
                     {user?.profileImage ? (
-                      <img 
-                        src={user.profileImage.startsWith('http') || user.profileImage.startsWith('//') || user.profileImage.includes('googleusercontent') ? (user.profileImage.startsWith('http') || user.profileImage.startsWith('//') ? user.profileImage : `https://${user.profileImage}`) : user.profileImage.startsWith('data:') ? user.profileImage : `data:image/jpeg;base64,${user.profileImage}`} 
-                        alt="Profile" 
+                      <img
+                        src={user.profileImage.startsWith('http') || user.profileImage.startsWith('//') || user.profileImage.includes('googleusercontent') ? (user.profileImage.startsWith('http') || user.profileImage.startsWith('//') ? user.profileImage : `https://${user.profileImage}`) : user.profileImage.startsWith('data:') ? user.profileImage : `data:image/jpeg;base64,${user.profileImage}`}
+                        alt="Profile"
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -303,11 +300,10 @@ function MobilePublicMenu() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 font-semibold text-sm ${
-                  pathname === link.href
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-                }`}
+                className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 font-semibold text-sm ${pathname === link.href
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {link.label}
               </Link>
@@ -335,11 +331,10 @@ function MobilePublicMenu() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 font-semibold text-sm ${
-                  pathname === link.href
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-                }`}
+                className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 font-semibold text-sm ${pathname === link.href
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {link.label}
               </Link>
